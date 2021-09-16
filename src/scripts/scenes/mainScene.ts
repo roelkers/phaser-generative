@@ -7,51 +7,13 @@ import { IVirtualAudioNodeGraph } from "virtual-audio-graph/dist/types"
 import { Scale } from "@tonaljs/tonal"
 import Pointer from "../objects/pointer"
 
-const SKULL_ATTACK = 0.033187402641826
-const SKULL_RELEASE = 0.2255409284924679
-const SKULL_ENV = SKULL_ATTACK + SKULL_RELEASE
 
-interface SynthConfig {
+export interface SynthConfig {
   0: AudioConfig<'osc'>,
   1: AudioConfig<'filter'>,
   2: AudioConfig<'arEnvelope'>
  } 
 
-const config: SynthConfig = {
-  '0': {
-    nodeCreator: 'osc',
-    output: '1',
-    params: {
-      scaleNoteIndex: 2,
-      octave: 2,
-      type: 'sawtooth',
-      attack: 0.0347923344020317,
-      release: 0.2704998375324057,
-      envFrequencyAmount: 24.41
-    }
-  },
-  '1': {
-    nodeCreator: 'filter',
-    output: '2',
-    params: {
-      resonance: 2.5860000992947785,
-      attack: 0.43332941456034035,
-      release: 0.3099644507332475,
-      frequency: 175.93633973762812,
-      type: 'lowpass',
-      envAmount: 299.4825904816633
-    }
-  },
-  '2': {
-    nodeCreator: 'arEnvelope',
-    output: 'output',
-    params: {
-      gain: 0.05160151470036647,
-      attack: SKULL_ATTACK,
-      release: SKULL_RELEASE
-    }
-  }
-}
 
 export default class MainScene extends Phaser.Scene {
 
@@ -87,6 +49,10 @@ export default class MainScene extends Phaser.Scene {
       rock.on('pointerdown', () => {
         this.pointer.setPosition(rock.x,rock.y) 
         this.selectedRock = rock 
+        const velocity = rock.body.velocity
+        if(this.isStill(velocity)) {
+          this.pointer.setVisible(true)
+        }
       })
     }
     this.input.on('pointermove', (current) => {
@@ -95,6 +61,14 @@ export default class MainScene extends Phaser.Scene {
       }
       const angle = Phaser.Math.Angle.BetweenPoints(current, this.selectedRock) - Phaser.Math.PI2/4
       this.pointer.rotation = angle 
+    })
+    this.input.on('pointerup', () => {
+      const velocity = this.selectedRock?.body.velocity
+      if(!velocity || !this.isStill(velocity)) {
+        return
+      }
+      this.physics.velocityFromRotation(this.pointer.rotation - Phaser.Math.PI2/4, 200, this.selectedRock?.body.velocity)
+      this.pointer.setVisible(false)
     })
     this.input.once('pointerdown', () => {
       const w = window as any
@@ -117,16 +91,13 @@ export default class MainScene extends Phaser.Scene {
       skull.hit(currentTime)
     })
   }
+  isStill(velocity : Phaser.Math.Vector2) {
+    return Math.round(velocity.x) === 0 && Math.round(velocity.y) === 0
+  }
 
   update() {
     this.physics.world.collide(this.rocks)
     this.updateAudioGraph()
-    const currentVel = this.selectedRock?.body.velocity
-    if(currentVel?.x !== 0 || currentVel.y !== 0) {
-      this.pointer.setVisible(false)
-    } else {
-      this.pointer.setVisible(false)
-    }
   }
 
   updateAudioGraph() {
@@ -140,9 +111,10 @@ export default class MainScene extends Phaser.Scene {
     const update = filteredSkulls
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
-      if(currentTime < skull.startTime + SKULL_ENV) {
-        Object.assign(acc, { [i]: outputNode('output', { audio: config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
+      if(currentTime < skull.startTime + skull.duration) {
+        Object.assign(acc, { [i]: outputNode('output', { audio: skull.config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
       }
+      
      return acc
     },{})
     this.virtualAudioGraph.update(update)

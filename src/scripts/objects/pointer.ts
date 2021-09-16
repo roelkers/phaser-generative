@@ -3,7 +3,7 @@ export default class Pointer extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'pointer')
     scene.add.existing(this)
     scene.physics.add.existing(this)
-    //this.rotation = scene.physics.arcade.angleToPointer(this)
-
+    //not visible by default
+    this.setVisible(false)
   }
 }
