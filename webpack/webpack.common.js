@@ -15,7 +15,10 @@ module.exports = {
     extensions: ['.ts', '.tsx', '.js']
   },
   module: {
-    rules: [{ test: /\.tsx?$|\.jsx?$/, include: path.join(__dirname, '../src'), loader: 'ts-loader' }]
+    rules: [
+      { test: /\.tsx?$|\.jsx?$/, include: path.join(__dirname, '../src'), loader: 'ts-loader' },
+      //{ test: /\.wav$/, include: path.join(__dirname, '../src/assets/wav'), loader: 'file-loader' }
+    ]
   },
   optimization: {
     splitChunks: {
