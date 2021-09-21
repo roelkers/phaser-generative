@@ -32,6 +32,7 @@ export default class MainScene extends Phaser.Scene {
     this.irBuffer = this.cache.audio.get('reverb_ir'),
     this.skulls = this.add.group()
     for (let index = 0; index < 20; index++) {
+    //for (let index = 0; index < 1; index++) {
       const randomX = Math.random() * this.cameras.main.width;
       const randomY = Math.random() * (this.cameras.main.height - 300) + 150;
       const skull = new Skull(this, randomX, randomY);
@@ -39,7 +40,7 @@ export default class MainScene extends Phaser.Scene {
       this.skulls.add(skull)
     }
     this.rocks = this.add.group()
-    for (let index = 0; index < 1; index++) {
+    for (let index = 0; index < 10; index++) {
       const randomX = Math.random() * this.cameras.main.width;
       const randomY = Math.random() * (this.cameras.main.height);
       const rock = new Rock(this, randomX, randomY).setVelocity(100,100).play('roll') 
@@ -73,6 +74,8 @@ export default class MainScene extends Phaser.Scene {
       }
       const { currentTime } = this.virtualAudioGraph
       skull.hit(currentTime)
+      console.log(currentTime)
+      this.updateAudioGraph()
     })
     this.physics.world.addCollider(this.blocks, this.rocks)
     this.input.once('pointerdown', async () => {
@@ -93,7 +96,6 @@ export default class MainScene extends Phaser.Scene {
   update() {
     this.physics.world.collide(this.rocks)
     //this.physics.world.collide(this.blocks, this.rocks)
-    this.updateAudioGraph()
   }
 
   updateAudioGraph() {
@@ -102,8 +104,8 @@ export default class MainScene extends Phaser.Scene {
     }
     //this.virtualAudioGraph.update({})
     const { currentTime } = this.virtualAudioGraph
-    const filteredSkulls = this.skulls.getChildren().filter((skull: any) => {
-    return !!skull.startTime }) as Skull[]
+    const filteredSkulls = this.skulls.getChildren() as Skull[]
+    //.filter((skull: any) => { return !!skull.startTime }) 
 
     let update = Object.assign({}, {
       1: dynamicsCompressor('output', {
@@ -117,15 +119,16 @@ export default class MainScene extends Phaser.Scene {
       //   decay: 0.8,
       //   delayTime: 1.55,
       // }),
-      // 2: convolver('1', {
-      //   buffer: this.irBuffer,
-      //   normalize: true
-      // })
+      2: convolver('1', {
+        buffer: this.irBuffer,
+        normalize: true
+      })
     })
     update = filteredSkulls
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
-      if(currentTime < skull.startTime + skull.duration) {
+      if(skull.startTime && currentTime < skull.startTime + skull.duration) {
+      //if(startTime) {
         Object.assign(acc, { [i+1]: outputNode([1], { audio: skull.config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc

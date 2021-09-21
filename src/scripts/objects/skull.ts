@@ -1,7 +1,7 @@
 import { SynthConfig } from "../scenes/mainScene"
 
 const SKULL_ATTACK = 0.033187402641826
-const SKULL_RELEASE = 1.4255409284924679
+const SKULL_RELEASE = .04255409284924679
 const SKULL_ENV = SKULL_ATTACK + SKULL_RELEASE
 
 
@@ -63,6 +63,9 @@ export default class Skull extends Phaser.Physics.Arcade.Sprite {
   }
 
   hit(time: number) {
+    if(this.startTime + this.duration > time) {
+      return 
+    }
     this.startTime = time
   }
 }
