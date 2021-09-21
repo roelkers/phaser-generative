@@ -5,10 +5,8 @@ import Skull from "../objects/skull"
 import outputNode, { AudioConfig } from "../../nodeCreators/outputNode"
 import { IVirtualAudioNodeGraph } from "virtual-audio-graph/dist/types"
 import { Scale } from "@tonaljs/tonal"
-import Pointer from "../objects/pointer"
 import pingPongDelay from "../../nodeCreators/pingPongDelay"
-import buffer from '../../assets/wav/ByronGlacier.wav'
-
+import Block from "../objects/block"
 
 export interface SynthConfig {
   0: AudioConfig<'osc'>,
@@ -20,10 +18,9 @@ export default class MainScene extends Phaser.Scene {
 
   skulls: Phaser.GameObjects.Group
   rocks:  Phaser.GameObjects.Group
+  blocks:  Phaser.GameObjects.Group
   virtualAudioGraph: VirtualAudioGraph
   tonalScale: string[]
-  pointer: Phaser.Physics.Arcade.Sprite
-  selectedRock: Phaser.Physics.Arcade.Sprite | null = null
   irBuffer : any
 
   constructor() {
@@ -32,58 +29,37 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
-    // this.irBuffer = this.cache.audio.get('reverb_ir'),
-    // console.log(this.irBuffer)
+    this.irBuffer = this.cache.audio.get('reverb_ir'),
     this.skulls = this.add.group()
-    this.pointer = new Pointer(this, 200, 200)  
     for (let index = 0; index < 20; index++) {
       const randomX = Math.random() * this.cameras.main.width;
-      const randomY = Math.random() * this.cameras.main.height;
+      const randomY = Math.random() * (this.cameras.main.height - 300) + 150;
       const skull = new Skull(this, randomX, randomY);
       //const skull = new Skull(this, 500, 500); 
       this.skulls.add(skull)
     }
     this.rocks = this.add.group()
-    for (let index = 0; index < 20; index++) {
+    for (let index = 0; index < 1; index++) {
       const randomX = Math.random() * this.cameras.main.width;
-      const randomY = Math.random() * this.cameras.main.height;
-      const rock = new Rock(this, randomX, randomY)//.setVelocity(100,100).play('roll') 
+      const randomY = Math.random() * (this.cameras.main.height);
+      const rock = new Rock(this, randomX, randomY).setVelocity(100,100).play('roll') 
       //const rock = new Rock(this, 500, 200).setVelocity(0,700)
       this.rocks.add(rock)
-      rock.on('pointerdown', () => {
-        this.pointer.setPosition(rock.x,rock.y) 
-        this.selectedRock = rock 
-        const velocity = rock.body.velocity
-        if(this.isStill(velocity)) {
-          this.pointer.setVisible(true)
-        }
-      })
     }
-    this.input.on('pointermove', (current) => {
-      if(!this.selectedRock) {
-         return
-      }
-      const angle = Phaser.Math.Angle.BetweenPoints(current, this.selectedRock) - Phaser.Math.PI2/4
-      this.pointer.rotation = angle 
-    })
-    this.input.on('pointerup', () => {
-      const velocity = this.selectedRock?.body.velocity
-      if(!velocity || !this.isStill(velocity)) {
-        return
-      }
-      this.physics.velocityFromRotation(this.pointer.rotation - Phaser.Math.PI2/4, 200, this.selectedRock?.body.velocity)
-      this.pointer.setVisible(false)
-    })
-    this.input.once('pointerdown', async () => {
-      const w = window as any
-      const AudioContext = window.AudioContext || w.webkitAudioContext;
-      this.virtualAudioGraph = createVirtualAudioGraph({ audioContext : new AudioContext })
-      const context = this.virtualAudioGraph.audioContext
-      context.resume()
-      let response     = await fetch(buffer as string);
-      let arraybuffer  = await response.arrayBuffer();
-      this.irBuffer = await context.decodeAudioData(arraybuffer);
-    })
+    
+    const nrBlocks = Math.round(1280 / 200) + 1
+    let x: number = 0
+    this.blocks = this.add.group()
+    for (let index = 0; index < nrBlocks; index++) {
+      const blockUpper = new Block(this, x, -250)
+      const blockLower = new Block(this, x, 900)
+      x += 200 
+      const startAt = Math.random() * 200
+      this.time.addEvent({ delay: 200, callback: this.changeBlockDirection, loop: true, callbackScope: blockUpper, startAt })
+      this.time.addEvent({ delay: 200, callback: this.changeBlockDirection, loop: true, callbackScope: blockLower, startAt })
+      this.blocks.add(blockUpper)
+      this.blocks.add(blockLower)
+    }
     this.physics.world.addCollider(this.skulls, this.rocks, (objA, objB) => {
       let skull
       if(objA instanceof Skull) {
@@ -98,13 +74,25 @@ export default class MainScene extends Phaser.Scene {
       const { currentTime } = this.virtualAudioGraph
       skull.hit(currentTime)
     })
+    this.physics.world.addCollider(this.blocks, this.rocks)
+    this.input.once('pointerdown', async () => {
+      const w = window as any
+      const AudioContext = window.AudioContext || w.webkitAudioContext;
+      this.virtualAudioGraph = createVirtualAudioGraph({ audioContext : new AudioContext })
+      const context = this.virtualAudioGraph.audioContext
+      context.resume()
+    })
   }
-  isStill(velocity : Phaser.Math.Vector2) {
-    return Math.round(velocity.x) === 0 && Math.round(velocity.y) === 0
+
+  changeBlockDirection() {
+    const t = this as any
+    const velY = (-1.0 * t.body.velocity.y || 200)
+    t.setVelocity(0, velY) 
   }
 
   update() {
     this.physics.world.collide(this.rocks)
+    //this.physics.world.collide(this.blocks, this.rocks)
     this.updateAudioGraph()
   }
 
@@ -112,7 +100,6 @@ export default class MainScene extends Phaser.Scene {
     if (!this.virtualAudioGraph || !this.irBuffer) {
       return
     }
-    console.log(buffer)
     //this.virtualAudioGraph.update({})
     const { currentTime } = this.virtualAudioGraph
     const filteredSkulls = this.skulls.getChildren().filter((skull: any) => {
@@ -130,16 +117,16 @@ export default class MainScene extends Phaser.Scene {
       //   decay: 0.8,
       //   delayTime: 1.55,
       // }),
-      2: convolver('1', {
-        buffer: buffer,
-        normalize: true
-      })
+      // 2: convolver('1', {
+      //   buffer: this.irBuffer,
+      //   normalize: true
+      // })
     })
     update = filteredSkulls
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
       if(currentTime < skull.startTime + skull.duration) {
-        Object.assign(acc, { [i+1]: outputNode([1,2], { audio: skull.config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
+        Object.assign(acc, { [i+1]: outputNode([1], { audio: skull.config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc
     },update)

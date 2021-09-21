@@ -19,7 +19,5 @@ export default class Rock extends Phaser.Physics.Arcade.Sprite {
         first: 11,
       })
     })
-    this.setInteractive()
-
   }
 }
