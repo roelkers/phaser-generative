@@ -46,7 +46,7 @@ export default class Rock extends Phaser.Physics.Arcade.Sprite {
         nodeCreator: 'arEnvelope',
         output: 'output',
         params: {
-          gain: 0.05160151470036647,
+          gain: 0.0160151470036647,
           attack: ATTACK,
           release: RELEASE
         }

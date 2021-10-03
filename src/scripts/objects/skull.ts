@@ -62,6 +62,8 @@ export default class Skull extends Phaser.Physics.Arcade.Sprite {
     this.config[0].params.scaleNoteIndex = noteSelection[randomIndex]
     this.config[0].params.octave = 2 + Math.round(Math.random() * 3)
     this.config[1].params.envAmount += 1000 * Math.random()
+    this.config[2].params.release += .05 * Math.random() 
+    this.config[2].params.gain += .05 * Math.random() 
 
     this.setCollideWorldBounds(true)
       .setBounce(0.7)

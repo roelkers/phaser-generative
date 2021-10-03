@@ -7,7 +7,7 @@ import Block from "../objects/block"
 import Rock from "../objects/rock"
 import Skull from "../objects/skull"
 
-export default class MainScene extends Phaser.Scene {
+export default class RockSkullScene extends Phaser.Scene {
 
   skulls: Phaser.GameObjects.Group
   rocks:  Phaser.GameObjects.Group
@@ -18,7 +18,7 @@ export default class MainScene extends Phaser.Scene {
   noiseWorkletNode : any
 
   constructor() {
-    super({ key: 'MainScene' })
+    super({ key: 'RockSkullScene' })
     this.tonalScale = Scale.get("Ab minor").notes
   }
 
@@ -26,11 +26,9 @@ export default class MainScene extends Phaser.Scene {
     this.irBuffer = this.cache.audio.get('reverb_ir'),
     this.skulls = this.add.group()
     for (let index = 0; index < 20; index++) {
-    //for (let index = 0; index < 1; index++) {
       const randomX = Math.random() * this.cameras.main.width;
       const randomY = Math.random() * (this.cameras.main.height - 300) + 150;
       const skull = new Skull(this, randomX, randomY);
-      //const skull = new Skull(this, 500, 500); 
       this.skulls.add(skull)
     }
     this.rocks = this.add.group()
@@ -38,7 +36,6 @@ export default class MainScene extends Phaser.Scene {
       const randomX = Math.random() * this.cameras.main.width;
       const randomY = Math.random() * (this.cameras.main.height);
       const rock = new Rock(this, randomX, randomY).setVelocity(100,100).play('roll') 
-      //const rock = new Rock(this, 500, 200).setVelocity(0,700)
       this.rocks.add(rock)
     }
     
@@ -80,7 +77,8 @@ export default class MainScene extends Phaser.Scene {
         return
       }
       const { currentTime } = this.virtualAudioGraph
-      rock.hit(currentTime) 
+      // DISABLES ROCKS HITTING SOUND
+      //rock.hit(currentTime) 
       this.updateAudioGraph()
     })
 
@@ -101,41 +99,31 @@ export default class MainScene extends Phaser.Scene {
     t.setVelocity(0, velY) 
   }
 
-  update() {
-
-  }
-
   updateAudioGraph() {
     if (!this.virtualAudioGraph || !this.irBuffer) {
       return
     }
-    //this.virtualAudioGraph.update({})
     const { currentTime } = this.virtualAudioGraph
     const filteredSkulls = this.skulls.getChildren().concat(this.rocks.getChildren()) as Skull[]
-    //.filter((skull: any) => { return !!skull.startTime }) 
 
     let update = Object.assign({}, {
       1: dynamicsCompressor('output', {
-        attack: 0.1,
+        attack: 0.01,
         knee: 40,
         ratio: 4,
         release: 0.3,
         threshold: -50, 
       }),
-      // 2: pingPongDelay('1', {
-      //   decay: 0.8,
-      //   delayTime: 1.55,
-      // }),
       2: convolver('1', {
         buffer: this.irBuffer,
-        normalize: true
+        normalize: false
       })
     })
     update = filteredSkulls
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
       if(skull.startTime && currentTime < skull.startTime + skull.duration) {
-        Object.assign(acc, { [i+1]: outputNode([1], { audio: skull.config, startTime, scale: this.tonalScale, noiseWorkletNode: this.noiseWorkletNode }) }) as unknown as IVirtualAudioNodeGraph
+        Object.assign(acc, { [i+1]: outputNode(['2'], { audio: skull.config, startTime, scale: this.tonalScale, noiseWorkletNode: this.noiseWorkletNode }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc
     },update)

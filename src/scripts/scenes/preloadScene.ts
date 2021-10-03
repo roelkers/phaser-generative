@@ -9,7 +9,7 @@ export default class PreloadScene extends Phaser.Scene {
     })
     this.load.image('skull', 'assets/img/goldskull.png')
     this.load.image('pointer', 'assets/img/ornamented_arrow.png')
-    this.load.audio('reverb_ir', 'assets/wav/CathedralRoom.wav')
+    this.load.audio('reverb_ir', 'assets/wav/NancyLakeTunnel.wav')
     this.load.image('block', 'assets/img/block.png')
   }
 
