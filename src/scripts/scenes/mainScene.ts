@@ -1,18 +1,11 @@
+import { Scale } from "@tonaljs/tonal"
+import createVirtualAudioGraph, { convolver, createWorkletNode, dynamicsCompressor } from 'virtual-audio-graph'
+import { IVirtualAudioNodeGraph } from "virtual-audio-graph/dist/types"
 import VirtualAudioGraph from "virtual-audio-graph/dist/VirtualAudioGraph"
-import createVirtualAudioGraph, { convolver, dynamicsCompressor, gain, oscillator } from 'virtual-audio-graph'
+import outputNode from "../../nodeCreators/outputNode"
+import Block from "../objects/block"
 import Rock from "../objects/rock"
 import Skull from "../objects/skull"
-import outputNode, { AudioConfig } from "../../nodeCreators/outputNode"
-import { IVirtualAudioNodeGraph } from "virtual-audio-graph/dist/types"
-import { Scale } from "@tonaljs/tonal"
-import pingPongDelay from "../../nodeCreators/pingPongDelay"
-import Block from "../objects/block"
-
-export interface SynthConfig {
-  0: AudioConfig<'osc'>,
-  1: AudioConfig<'filter'>,
-  2: AudioConfig<'arEnvelope'>
- } 
 
 export default class MainScene extends Phaser.Scene {
 
@@ -22,6 +15,7 @@ export default class MainScene extends Phaser.Scene {
   virtualAudioGraph: VirtualAudioGraph
   tonalScale: string[]
   irBuffer : any
+  noiseWorkletNode : any
 
   constructor() {
     super({ key: 'MainScene' })
@@ -74,15 +68,29 @@ export default class MainScene extends Phaser.Scene {
       }
       const { currentTime } = this.virtualAudioGraph
       skull.hit(currentTime)
-      console.log(currentTime)
       this.updateAudioGraph()
     })
     this.physics.world.addCollider(this.blocks, this.rocks)
+    this.physics.world.addCollider(this.rocks, this.rocks, (rock1, rock2) => {
+      let rock
+      if(rock1 instanceof Rock) {
+        rock = rock1
+      }
+      if (!this.virtualAudioGraph) {
+        return
+      }
+      const { currentTime } = this.virtualAudioGraph
+      rock.hit(currentTime) 
+      this.updateAudioGraph()
+    })
+
     this.input.once('pointerdown', async () => {
       const w = window as any
       const AudioContext = window.AudioContext || w.webkitAudioContext;
       this.virtualAudioGraph = createVirtualAudioGraph({ audioContext : new AudioContext })
       const context = this.virtualAudioGraph.audioContext
+      await context.audioWorklet.addModule('public/noise.js').catch(e => console.log(e))
+      this.noiseWorkletNode = createWorkletNode('noise')
       context.resume()
     })
   }
@@ -94,8 +102,7 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update() {
-    this.physics.world.collide(this.rocks)
-    //this.physics.world.collide(this.blocks, this.rocks)
+
   }
 
   updateAudioGraph() {
@@ -104,7 +111,7 @@ export default class MainScene extends Phaser.Scene {
     }
     //this.virtualAudioGraph.update({})
     const { currentTime } = this.virtualAudioGraph
-    const filteredSkulls = this.skulls.getChildren() as Skull[]
+    const filteredSkulls = this.skulls.getChildren().concat(this.rocks.getChildren()) as Skull[]
     //.filter((skull: any) => { return !!skull.startTime }) 
 
     let update = Object.assign({}, {
@@ -128,8 +135,7 @@ export default class MainScene extends Phaser.Scene {
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
       if(skull.startTime && currentTime < skull.startTime + skull.duration) {
-      //if(startTime) {
-        Object.assign(acc, { [i+1]: outputNode([1], { audio: skull.config, startTime, scale: this.tonalScale }) }) as unknown as IVirtualAudioNodeGraph
+        Object.assign(acc, { [i+1]: outputNode([1], { audio: skull.config, startTime, scale: this.tonalScale, noiseWorkletNode: this.noiseWorkletNode }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc
     },update)

@@ -9,14 +9,15 @@ export interface AudioConfig<T extends keyof NodeCreators> {
 }
 
 const audioMapper
-  = (startTime: number, scale : string[]) => (audioConfig: AudioConfig<NodeCreator>) => {
+  = (startTime: number, scale : string[], noiseWorkletNode: any) => (audioConfig: AudioConfig<NodeCreator>) => {
     const nodeCreatorName = audioConfig.nodeCreator
     return nodeCreators[nodeCreatorName](
       audioConfig.output,
       {
         ...audioConfig.params,
         startTime,
-        scale
+        scale,
+        noiseWorkletNode
       }
     )
   }
@@ -24,11 +25,12 @@ const audioMapper
 const nodeCreator = createNode(({
   startTime,
   audio,
-  scale
+  scale,
+  noiseWorkletNode
   }) => {
     let result: Record<number,CustomVirtualAudioNode> = {}
     for (const [key,value] of Object.entries(audio)) {
-      result[key] = audioMapper(startTime,scale)(value as AudioConfig<NodeCreator>)
+      result[key] = audioMapper(startTime,scale,noiseWorkletNode)(value as AudioConfig<NodeCreator>)
     }
     return result
   })

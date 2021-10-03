@@ -1,4 +1,10 @@
-import { SynthConfig } from "../scenes/mainScene"
+import { AudioConfig } from "../../nodeCreators/outputNode"
+
+export interface SynthConfig {
+  0: AudioConfig<'osc'>,
+  1: AudioConfig<'filter'>,
+  2: AudioConfig<'arEnvelope'>
+ } 
 
 const SKULL_ATTACK = 0.033187402641826
 const SKULL_RELEASE = .04255409284924679
