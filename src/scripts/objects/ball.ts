@@ -6,9 +6,10 @@ export interface SynthConfig {
   2: AudioConfig<'arEnvelope'>
  } 
 
-export default class Ballll extends Phaser.Physics.Arcade.Sprite {
+export default class Ball extends Phaser.Physics.Matter.Sprite {
   startTime: number
   duration: number 
+  config: SynthConfig;
 
   hit(time: number) {
     if(this.startTime + this.duration > time) {

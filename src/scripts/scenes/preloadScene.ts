@@ -7,10 +7,12 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('rock', 'assets/img/rock_round.png', {
       frameWidth: 32, frameHeight: 32, endFrame: 12 
     })
+    this.load.image('ball', 'assets/img/redorb.png');
     this.load.image('skull', 'assets/img/goldskull.png')
-    this.load.image('pointer', 'assets/img/ornamented_arrow.png')
     this.load.audio('reverb_ir', 'assets/wav/NancyLakeTunnel.wav')
     this.load.image('block', 'assets/img/block.png')
+    this.load.image('ring', 'assets/img/Ring.png')
+    this.load.json('ring_collision', 'assets/physics/ring_collision.json')
   }
 
   create() {

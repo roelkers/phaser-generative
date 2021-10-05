@@ -9,9 +9,10 @@ export default class RedBall extends Ball {
   duration: number 
 
   constructor(scene, x, y) {
-    super(scene, x, y, 'skull')
-    scene.add.existing(this)
-    scene.physics.add.existing(this)
+    super(scene.matter.world, x, y, 'ball')
+    scene.add.existing(this).setDisplaySize(32,32)
+    //scene.matter.add.existing(this)
+    this.setCircle(32)
     this.duration = ENV
     const config: SynthConfig = {
       '0': {
@@ -51,8 +52,8 @@ export default class RedBall extends Ball {
     this.config = config 
     this.config[0].params.scaleNoteIndex = 0 
 
-    this.setCollideWorldBounds(true)
-      .setBounce(0.7)
-      .setImmovable(true)
+    // this.setCollideWorldBounds(true)
+    //   .setBounce(0.7)
+    //   .setImmovable(true)
   }
 }

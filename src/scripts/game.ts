@@ -2,9 +2,10 @@ import 'phaser'
 import RockSkullScene from './scenes/RockSkullScene'
 import PreloadScene from './scenes/preloadScene'
 import SelectionScene from './scenes/SelectionScene'
+import RotatingScene from './scenes/RotatingScene'
 
-const DEFAULT_WIDTH = 1280
-const DEFAULT_HEIGHT = 720
+export const DEFAULT_WIDTH = 1280
+export const DEFAULT_HEIGHT = 720
 
 const config = {
   type: Phaser.AUTO,
@@ -16,11 +17,16 @@ const config = {
     width: DEFAULT_WIDTH,
     height: DEFAULT_HEIGHT
   },
-  scene: [PreloadScene, SelectionScene, RockSkullScene],
+  scene: [PreloadScene, SelectionScene, RockSkullScene, RotatingScene],
   physics: {
-    default: 'arcade',
+    default: 'matter',
     arcade: {
-      debug: false,
+      debug: true,
+      gravity:{}
+    },
+    matter: {
+      debug: true,
+      gravity:{}
     }
   }
 }
