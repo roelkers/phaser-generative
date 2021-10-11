@@ -7,8 +7,16 @@ import { DEFAULT_HEIGHT, DEFAULT_WIDTH } from "../game"
 import Ball from "../objects/ball"
 import RedBall from "../objects/redBall"
 
+const x0 = 640;
+const y0 = 360;
+const sin = Math.sin
+const cos = Math.cos
+
 export default class RotatingScene extends Phaser.Scene {
 
+  width: number;
+  height: number;
+  m: number 
   redBalls:  Phaser.GameObjects.Group
   virtualAudioGraph: VirtualAudioGraph
   tonalScale: string[]
@@ -19,44 +27,34 @@ export default class RotatingScene extends Phaser.Scene {
   constructor() {
     super({ key: 'MainScene' })
     this.tonalScale = Scale.get("Ab minor").notes
+    this.width = DEFAULT_WIDTH;
+    this.height = DEFAULT_HEIGHT;
+    this.m = Math.min(this.width, this.height);
   }
 
   createWheel() {
-    const x0 = 640;
-    const y0 = 360;
-    let pegCount = 16;
-    let pegSize = 40;
-    let maximumBalls = 200;
-    let w = 750;
-    let h = 900;
-    let countX = 10;
-    let countY = 20;
-    const width = DEFAULT_WIDTH;
-    const height = DEFAULT_HEIGHT;
-    let m = Math.min(width, height);
-    let rat = 1 / 5 * 2;
-    let r = m * rat;
+    const pegCount = 16;
+    const rat = 1 / 5 * 2;
+    const r = this.m * rat;
     const TAU = Phaser.Math.PI2
-    const sin = Math.sin
-    const cos = Math.cos
     const Body = this.matter.body
     
     let parts = [];
     
     for(let i = 0; i < pegCount; i++) {
-      let segment = TAU / pegCount;
-      let angle = i / pegCount * TAU;
-      let angle2 = i / pegCount * TAU + segment / 2;
-      let x = cos(angle);
-      let y = sin(angle);
-      let x2 = cos(angle2);
-      let y2 = sin(angle2);
-      let cx = x0 + x * r;
-      let cy = y0 + y * r;
-      let cx2 = x0 + x2 * r;
-      let cy2 = y0 + y2 * r;
-      const rectangle = this.matter.add.rectangle(cx, cy, 120 / 1000 * m, 30 / 1000 * m, { angle: angle, ignoreGravity: true, isStatic: true })
-      const arc = this.matter.add.rectangle(cx2, cy2, 30 / 1000 * m, 150 / 1000 * m, { angle: angle2, ignoreGravity: true, isStatic: true })
+      const segment = TAU / pegCount;
+      const angle = i / pegCount * TAU;
+      const angle2 = i / pegCount * TAU + segment / 2;
+      const x = cos(angle);
+      const y = sin(angle);
+      const x2 = cos(angle2);
+      const y2 = sin(angle2);
+      const cx = x0 + x * r;
+      const cy = y0 + y * r;
+      const cx2 = x0 + x2 * r;
+      const cy2 = y0 + y2 * r;
+      const rectangle = this.matter.add.rectangle(cx, cy, 120 / 1000 * this.m, 30 / 1000 * this.m, { angle: angle, ignoreGravity: true, isStatic: true })
+      const arc = this.matter.add.rectangle(cx2, cy2, 30 / 1000 * this.m, 150 / 1000 * this.m, { angle: angle2, ignoreGravity: true, isStatic: true })
       
       // let circ = addRect({ x: cx, y: cy, w: 120 / 1000 * m, h: 30 / 1000 * m, options: { angle: angle, isStatic: true } });
       // let rect = addRect({ x: cx2, y: cy2, w: 30 / 1000 * m, h: 150 / 1000 * m, options: { angle: angle2, isStatic: true } });
@@ -78,12 +76,25 @@ export default class RotatingScene extends Phaser.Scene {
     this.irBuffer = this.cache.audio.get('reverb_ir')
     this.redBalls = this.add.group()
     this.createWheel()
-    for(let index = 0; index < 1; index++) {
-      //const point = this.circle.getRandomPoint()
-      //const red = new RedBall(this,point.x,point.y)
-      const red = new RedBall(this,400,500)
-      red.setCircle(16)
-      this.redBalls.add(red)
+    for (let Vjj = 0; Vjj < array.length; Vjj++) {
+      const element = array[Vjj];
+      
+    }
+    for(let index = 0; index <= 16; index++) {
+      const randomAngle = Math.random() * Phaser.Math.PI2
+      const xB = x0 + cos(randomAngle) * this.m * 1/5
+      const yB = y0 + sin(randomAngle) * this.m * 1/5
+      let ball : Ball | undefined
+      console.log(index % 4 === 1 )
+      console.log(index)
+      if(index % 4 === 1) {
+        ball = new RedBall(this,xB,yB)
+        console.log(xB)
+        console.log(yB)
+      }
+      if(!ball) return
+      ball.setCircle(16)
+      this.redBalls.add(ball)
     }
     
 
