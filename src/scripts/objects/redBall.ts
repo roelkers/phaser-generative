@@ -50,9 +50,5 @@ export default class RedBall extends Ball {
       }
     }
     this.config = config 
-
-    // this.setCollideWorldBounds(true)
-    //   .setBounce(0.7)
-    //   .setImmovable(true)
   }
 }
