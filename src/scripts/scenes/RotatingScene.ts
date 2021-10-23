@@ -25,8 +25,9 @@ export default class RotatingScene extends Phaser.Scene {
   circle: Phaser.Geom.Circle
   wheel: MatterJS.BodyType
   pegs: MatterJS.BodyType[] = [] 
-  pegGraphics : Phaser.GameObjects.Graphics[] = []
-  arcGraphics : Phaser.GameObjects.Graphics[] = []
+  currentRotation = 0
+  pegSprites: Phaser.GameObjects.Image[] = []
+  arcSprites: Phaser.GameObjects.Image[] = []
 
   constructor() {
     super({ key: 'MainScene' })
@@ -34,22 +35,19 @@ export default class RotatingScene extends Phaser.Scene {
     this.width = DEFAULT_WIDTH;
     this.height = DEFAULT_HEIGHT;
     this.m = Math.min(this.width, this.height);
-      console.log(this.m)
   }
 
-  drawWheel() {
+  drawWheel(addedAngle: number) {
     const rat = 1 / 5 * 2;
     const r = this.m * rat;
     const TAU = Phaser.Math.PI2
     
     for(let i = 0; i < pegCount; i++) {
-      const arcGraphic = this.arcGraphics[i]  
-      const pegGraphic = this.pegGraphics[i]  
-      arcGraphic.clear()
-      pegGraphic.clear()
+      let arcSprite = this.arcSprites[i]  
+      let pegSprite = this.pegSprites[i]  
       const segment = TAU / pegCount;
-      const angle = i / pegCount * TAU;
-      const angle2 = i / pegCount * TAU + segment / 2;
+      const angle = i / pegCount * TAU + addedAngle;
+      const angle2 = i / pegCount * TAU + segment / 2 + addedAngle;
       const x = cos(angle);
       const y = sin(angle);
       const x2 = cos(angle2);
@@ -58,9 +56,10 @@ export default class RotatingScene extends Phaser.Scene {
       const cy = y0 + y * r;
       const cx2 = x0 + x2 * r;
       const cy2 = y0 + y2 * r;
-      const { m } = this
-      const rect1 = new Phaser.Geom.Rectangle(cx, cy, 120 / 1000 * m, 30 / 1000 * m)
-      const rect2 = pegGraphic.fillRect(cx2, cy2, 30 / 1000 * m, 150 / 1000 * m);
+      pegSprite.setPosition(cx, cy)
+      arcSprite.setPosition(cx2, cy2)
+      pegSprite.setRotation(angle)
+      arcSprite.setRotation(angle2)
     }
   }
 
@@ -96,8 +95,8 @@ export default class RotatingScene extends Phaser.Scene {
 
   create() {
     for(let i = 0; i < pegCount; i++) {
-      this.pegGraphics.push(this.add.graphics({ lineStyle: { color: 0x0000aa, width: 2 }, fillStyle : { color: 0xaaaaaa }}))
-      this.arcGraphics.push(this.add.graphics({ lineStyle: { color: 0x0000aa, width: 2 }, fillStyle : { color: 0xaaaaaa }}))
+      this.pegSprites.push(this.add.image(0, 0 ,'rect1'))
+      this.arcSprites.push(this.add.image(0, 0 ,'rect2'))
     }
     this.irBuffer = this.cache.audio.get('reverb_ir')
     this.redBalls = this.add.group()
@@ -126,7 +125,7 @@ export default class RotatingScene extends Phaser.Scene {
       }
     }
     
-    this.drawWheel();
+    this.drawWheel(0);
 
     this.input.once('pointerdown', async () => {
       const w = window as any
@@ -138,8 +137,9 @@ export default class RotatingScene extends Phaser.Scene {
   }
 
   update() {
-    //this.matter.body.rotate(this.wheel, 0.02)
-    this.drawWheel();
+    this.currentRotation+= 0.02
+    this.matter.body.rotate(this.wheel, 0.02)
+    this.drawWheel(this.currentRotation);
   }
 
   updateAudioGraph() {
