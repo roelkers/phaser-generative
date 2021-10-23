@@ -18,7 +18,14 @@ export default class RockSkullScene extends Phaser.Scene {
   noiseWorkletNode : any
 
   constructor() {
-    super({ key: 'RockSkullScene' })
+    super({ 
+      key: 'RockSkullScene',
+      physics: {
+        arcade: {
+          gravity:{}
+        },
+      }
+    })
     this.tonalScale = Scale.get("Ab minor").notes
   }
 
@@ -110,11 +117,18 @@ export default class RockSkullScene extends Phaser.Scene {
       1: dynamicsCompressor('output', {
         attack: 0.01,
         knee: 40,
-        ratio: 4,
+        ratio: 10,
         release: 0.3,
         threshold: -50, 
       }),
-      2: convolver('1', {
+      2: dynamicsCompressor('1', {
+        attack: 0.01,
+        knee: 40,
+        ratio: 50,
+        release: 0.3,
+        threshold: -50, 
+      }),
+      3: convolver('2', {
         buffer: this.irBuffer,
         normalize: false
       })
@@ -123,7 +137,7 @@ export default class RockSkullScene extends Phaser.Scene {
     .reduce((acc, skull: Skull, i) => {
       const startTime = skull.startTime
       if(skull.startTime && currentTime < skull.startTime + skull.duration) {
-        Object.assign(acc, { [i+1]: outputNode(['2'], { audio: skull.config, startTime, scale: this.tonalScale, noiseWorkletNode: this.noiseWorkletNode }) }) as unknown as IVirtualAudioNodeGraph
+        Object.assign(acc, { [i+4]: outputNode(['2','3'], { audio: skull.config, startTime, scale: this.tonalScale, noiseWorkletNode: this.noiseWorkletNode }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc
     },update)

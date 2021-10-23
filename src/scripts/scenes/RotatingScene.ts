@@ -34,7 +34,14 @@ export default class RotatingScene extends Phaser.Scene {
   arcSprites: Phaser.GameObjects.Image[] = []
 
   constructor() {
-    super({ key: 'MainScene' })
+    super({ 
+      key: 'RotatingScene',
+      physics: {
+        matter: {
+          gravity:{ y : 0.7 }
+        }
+      }
+    })
     this.tonalScale = Scale.get("A major").notes
     this.width = DEFAULT_WIDTH;
     this.height = DEFAULT_HEIGHT;
@@ -148,16 +155,6 @@ export default class RotatingScene extends Phaser.Scene {
       }
       if(!ball) continue 
       ball.setCircle(16)
-      // for(let peg of this.pegs) {
-      //   peg.setOnCollideWith(ball.body as MatterJS.BodyType, () => {
-      //     if (!this.virtualAudioGraph || !ball) {
-      //       return
-      //     }
-      //     const { currentTime } = this.virtualAudioGraph 
-      //     this.updateAudioGraph()
-      //     ball.hit(currentTime)
-      //   })
-      // }
     }
     this.addColliders(this.redBalls, this.blueBalls)
     this.addColliders(this.blueBalls, this.yellowBalls)
@@ -196,14 +193,14 @@ export default class RotatingScene extends Phaser.Scene {
         attack: 0.01,
         knee: 40,
         ratio: 10,
-        release: -0.3,
+        release: 0.3,
         threshold: -50, 
       }),
       2: dynamicsCompressor('1', {
         attack: 0.01,
         knee: 40,
         ratio: 50,
-        release: -0.3,
+        release: 0.3,
         threshold: -50, 
       }),
       3: convolver('2', {

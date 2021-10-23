@@ -19,7 +19,6 @@ const config = {
   },
   scene: [PreloadScene, SelectionScene, RockSkullScene, RotatingScene],
   physics: {
-    default: 'matter',
     arcade: {
       gravity:{}
     },
