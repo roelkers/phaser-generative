@@ -21,12 +21,10 @@ const config = {
   physics: {
     default: 'matter',
     arcade: {
-      debug: true,
       gravity:{}
     },
     matter: {
-      debug: true,
-      gravity:{}
+      gravity:{ y : 0.7 }
     }
   }
 }

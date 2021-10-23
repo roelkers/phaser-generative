@@ -5,7 +5,9 @@ import VirtualAudioGraph from "virtual-audio-graph/dist/VirtualAudioGraph"
 import outputNode from "../../nodeCreators/outputNode"
 import { DEFAULT_HEIGHT, DEFAULT_WIDTH } from "../game"
 import Ball from "../objects/ball"
+import BlueBall from "../objects/blueBall"
 import RedBall from "../objects/redBall"
+import YellowBall from "../objects/yellowBall"
 
 const pegCount = 16;
 const x0 = 640;
@@ -19,6 +21,8 @@ export default class RotatingScene extends Phaser.Scene {
   height: number;
   m: number 
   redBalls:  Phaser.GameObjects.Group
+  blueBalls:  Phaser.GameObjects.Group
+  yellowBalls:  Phaser.GameObjects.Group
   virtualAudioGraph: VirtualAudioGraph
   tonalScale: string[]
   irBuffer : any
@@ -31,7 +35,7 @@ export default class RotatingScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'MainScene' })
-    this.tonalScale = Scale.get("Ab minor").notes
+    this.tonalScale = Scale.get("A major").notes
     this.width = DEFAULT_WIDTH;
     this.height = DEFAULT_HEIGHT;
     this.m = Math.min(this.width, this.height);
@@ -93,6 +97,28 @@ export default class RotatingScene extends Phaser.Scene {
    	this.wheel = Body.create({ parts , isStatic: true });
   }
 
+  addBallGroupCollider(group : Phaser.GameObjects.Group, ball: Ball) {
+    for(let obj of group.getChildren()) {
+      const body = obj.body as MatterJS.BodyType
+      body.setOnCollideWith(ball.body as MatterJS.BodyType, () => {
+        if (!this.virtualAudioGraph || !ball) {
+          return
+        }
+        const { currentTime } = this.virtualAudioGraph 
+        this.updateAudioGraph()
+        ball.hit(currentTime)
+        ball.setTint(0x007700)
+        this.time.addEvent({ delay: 200, callback: () => ball.setTint(undefined) })
+      })
+    }
+  }
+
+  addColliders(triggeringGroup: Phaser.GameObjects.Group, hitGroup: Phaser.GameObjects.Group) {
+    for(let obj of hitGroup.getChildren()) {
+      this.addBallGroupCollider(triggeringGroup, obj as Ball)
+    }
+  }
+
   create() {
     for(let i = 0; i < pegCount; i++) {
       this.pegSprites.push(this.add.image(0, 0 ,'rect1'))
@@ -100,30 +126,42 @@ export default class RotatingScene extends Phaser.Scene {
     }
     this.irBuffer = this.cache.audio.get('reverb_ir')
     this.redBalls = this.add.group()
+    this.yellowBalls = this.add.group()
+    this.blueBalls = this.add.group()
     this.createWheel()
-    for(let index = 0; index < 100; index++) {
+    for(let index = 0; index < 15; index++) {
       const randomAngle = Math.random() * Phaser.Math.PI2
       const xB = x0 + cos(randomAngle) * this.m * 1/5
       const yB = y0 + sin(randomAngle) * this.m * 1/5
       let ball : Ball | undefined
-      if(index % 4 === 1) {
+      if(index % 3 === 1) {
         ball = new RedBall(this,xB,yB)
+        this.redBalls.add(ball)
+      }
+      if(index % 3 === 2) {
+        ball = new BlueBall(this,xB,yB)
+        this.blueBalls.add(ball)
+      }
+      if(index % 3 === 0) {
+        ball = new YellowBall(this,xB,yB)
+        this.yellowBalls.add(ball)
       }
       if(!ball) continue 
       ball.setCircle(16)
-      this.redBalls.add(ball)
-
-      for(let peg of this.pegs) {
-        peg.setOnCollideWith(ball.body as MatterJS.BodyType, () => {
-          if (!this.virtualAudioGraph || !ball) {
-            return
-          }
-          const { currentTime } = this.virtualAudioGraph 
-          this.updateAudioGraph()
-          ball.hit(currentTime)
-        })
-      }
+      // for(let peg of this.pegs) {
+      //   peg.setOnCollideWith(ball.body as MatterJS.BodyType, () => {
+      //     if (!this.virtualAudioGraph || !ball) {
+      //       return
+      //     }
+      //     const { currentTime } = this.virtualAudioGraph 
+      //     this.updateAudioGraph()
+      //     ball.hit(currentTime)
+      //   })
+      // }
     }
+    this.addColliders(this.redBalls, this.blueBalls)
+    this.addColliders(this.blueBalls, this.yellowBalls)
+    this.addColliders(this.yellowBalls, this.redBalls)
     
     this.drawWheel(0);
 
@@ -147,26 +185,37 @@ export default class RotatingScene extends Phaser.Scene {
       return
     }
     const { currentTime } = this.virtualAudioGraph
-    const filteredSkulls = this.redBalls.getChildren().concat(this.redBalls.getChildren()) as Ball[]
+    const balls = [
+      ...this.redBalls.getChildren(),
+      ...this.yellowBalls.getChildren(),
+      ...this.blueBalls.getChildren()
+    ] as Ball[]
 
     let update = Object.assign({}, {
       1: dynamicsCompressor('output', {
         attack: 0.01,
         knee: 40,
-        ratio: 4,
-        release: 0.3,
+        ratio: 10,
+        release: -0.3,
         threshold: -50, 
       }),
-      2: convolver('1', {
+      2: dynamicsCompressor('1', {
+        attack: 0.01,
+        knee: 40,
+        ratio: 50,
+        release: -0.3,
+        threshold: -50, 
+      }),
+      3: convolver('2', {
         buffer: this.irBuffer,
         normalize: false
       })
     })
-    update = filteredSkulls
+    update = balls
     .reduce((acc, ball: Ball, i) => {
       const startTime = ball.startTime
       if(ball.startTime && currentTime < ball.startTime + ball.duration) {
-        Object.assign(acc, { [i+1]: outputNode(['1'], { audio: ball.config, startTime, scale: this.tonalScale, noiseWorkletNode: this }) }) as unknown as IVirtualAudioNodeGraph
+        Object.assign(acc, { [i+4]: outputNode(['3','2'], { audio: ball.config, startTime, scale: this.tonalScale, noiseWorkletNode: this }) }) as unknown as IVirtualAudioNodeGraph
       }
      return acc
     },update)

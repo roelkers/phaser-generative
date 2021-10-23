@@ -5,13 +5,12 @@ const RELEASE = 0.07
 const ENV = ATTACK + RELEASE
 
 
-export default class RedBall extends Ball {
+export default class YellowBall extends Ball {
   duration: number 
 
   constructor(scene, x, y) {
-    super(scene.matter.world, x, y, 'redball')
+    super(scene.matter.world, x, y, 'yellowball')
     scene.add.existing(this).setDisplaySize(32,32)
-    //scene.matter.add.existing(this)
     this.setCircle(32)
     this.duration = ENV
     const config: SynthConfig = {
@@ -19,7 +18,7 @@ export default class RedBall extends Ball {
         nodeCreator: 'osc',
         output: '1',
         params: {
-          scaleNoteIndex: 6,
+          scaleNoteIndex: 1,
           octave: 3,
           type: 'square',
           attack: ATTACK,
@@ -50,9 +49,6 @@ export default class RedBall extends Ball {
       }
     }
     this.config = config 
-
-    // this.setCollideWorldBounds(true)
-    //   .setBounce(0.7)
-    //   .setImmovable(true)
+    this.config[0].params.scaleNoteIndex = 0 
   }
 }
