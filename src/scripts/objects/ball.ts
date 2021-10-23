@@ -15,6 +15,7 @@ export default class Ball extends Phaser.Physics.Matter.Sprite {
     if(this.startTime + this.duration > time) {
       return 
     }
+    console.log("hit")
     this.startTime = time
   }
 }
